@@ -2,6 +2,7 @@
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
+import { CronJob } from 'cron';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -60,6 +61,31 @@ app.post('/api/gemini-vision', async (req, res) => {
     res.status(500).json({ error: 'Gemini API call failed' });
   }
 });
+
+app.get('/ping', (req, res) => {
+  res.send('🏓 Pong from Fork AI backend!');
+});
+
+const job = new CronJob(
+  '*/14 * * * *', // Every 14 minutes
+  async () => {
+    const pingUrl = 'https://kharabgpt-backend.onrender.com/ping'; // replace with actual Render URL
+
+    try {
+      const res = await fetch(pingUrl);
+      const text = await res.text();
+      console.log('🔁 Keep-alive ping success:', text, new Date().toLocaleString());
+    } catch (err) {
+      console.error('🔻 Keep-alive ping failed:', err);
+    }
+  },
+  null,
+  true,
+  'Asia/Kolkata'
+);
+
+
+job.start();
 
 app.listen(3001, () => {
   console.log('✅ Fork AI backend (Gemini) running at http://localhost:3001');
