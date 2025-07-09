@@ -9,44 +9,58 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-app.post('/api/chat', async (req, res) => {
-  const { messages } = req.body;
+app.post('/api/gemini-vision', async (req, res) => {
+  const { base64Image, userGoal } = req.body;
+
+  if (!base64Image) {
+    return res.status(400).json({ error: 'Image is required' });
+  }
 
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`;
+
+    const response = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPEN}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'mistralai/mistral-7b-instruct:free', // Free, good with instructions and natural tone
-        messages: [
+        contents: [
           {
-            role: 'system',
-            content: 'You are BharatGPT — an Indian AI chat assistant. You understand Hinglish, Tamil, Hindi, Telugu, and Indian slang. Respond like a helpful friend from India with empathy and clarity.'
-          },
-          ...messages
+            parts: [
+              {
+                text: `Analyze this meal photo and describe the ingredients and estimated calories. Tell me if it fits a goal like: ${userGoal || 'weight loss'}.`
+              },
+              {
+                inline_data: {
+                  mime_type: "image/jpeg",
+                  data: base64Image
+                }
+              }
+            ]
+          }
         ]
       })
     });
 
     const data = await response.json();
 
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('AI Error: Invalid or incomplete response', data);
-      return res.status(500).json({ error: 'AI did not return a valid result.' });
+    const result = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!result) {
+      console.error('Gemini Error: Invalid response', data);
+      return res.status(500).json({ error: 'Gemini did not return valid data' });
     }
 
-    const result = data.choices[0].message.content;
     res.json({ result });
 
-  } catch (error) {
-    console.error('BharatGPT API Error:', error);
-    res.status(500).json({ error: 'AI processing failed' });
+  } catch (err) {
+    console.error('Gemini Vision API Error:', err);
+    res.status(500).json({ error: 'Gemini API call failed' });
   }
 });
 
 app.listen(3001, () => {
-  console.log('✅ BharatGPT backend running at http://localhost:3001');
+  console.log('✅ Fork AI backend (Gemini) running at http://localhost:3001');
 });
