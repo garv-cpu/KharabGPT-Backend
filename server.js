@@ -20,7 +20,7 @@ app.post('/api/gemini-vision', async (req, res) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(geminiUrl, {
       method: 'POST',
